@@ -6,7 +6,7 @@
 /*   By: betdemir@student.42istanbul.com.tr         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 22:15:29 by betdemir          #+#    #+#             */
-/*   Updated: 2026/11/16 11:38:52 by betdemir         ###   ########.fr       */
+/*   Updated: 2026/11/17 01:03:00 by betdemir         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,8 +31,8 @@ char	*ft_extract_line(char	*stash)
 		temp[i] = stash[i];
 		i++;
 	}
-	if (stash[i] && stash[i] == '\n')
-		temp[i++] = '\n';
+	if (stash[i] == '\n')
+		temp[i] = '\n';
 	return (temp);
 }
 
@@ -46,10 +46,7 @@ char	*ft_next(char *stash)
 	while (stash[i] && stash[i] != '\n')
 		i++;
 	if (!stash[i])
-	{
-		free(stash);
-		return (NULL);
-	}
+		return (ft_free(stash));
 	temp = ft_calloc(ft_strlen(stash) - i + 1, sizeof(char));
 	if (!temp)
 		return (NULL);
@@ -81,22 +78,20 @@ char	*read_file(int fd, char *stash)
 
 	if (!stash)
 		stash = ft_calloc(1, 1);
-	buffer = ft_calloc(BUFFER_SIZE + 1, sizeof(char));
+	buffer = malloc(BUFFER_SIZE + 1);
 	if (!buffer)
 		return (NULL);
 	byte_read = 1;
-	while (byte_read > 0)
+	while (byte_read > 0 && !ft_strchr(stash, '\n'))
 	{
 		byte_read = read(fd, buffer, BUFFER_SIZE);
 		if (byte_read == -1)
 		{
 			free(buffer);
-			return (NULL);
+			return (ft_free(stash));
 		}
 		buffer[byte_read] = '\0';
 		stash = ft_strjoin_and_free(stash, buffer);
-		if (ft_strchr(buffer, '\n'))
-			break ;
 	}
 	free(buffer);
 	return (stash);
@@ -113,6 +108,11 @@ char	*get_next_line(int fd)
 	if (!stash)
 		return (NULL);
 	line = ft_extract_line(stash);
+	if (!line)
+	{
+		stash = ft_free(stash);
+		return (NULL);
+	}
 	stash = ft_next(stash);
 	return (line);
 }

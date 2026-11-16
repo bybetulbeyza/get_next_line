@@ -6,7 +6,7 @@
 /*   By: betdemir@student.42istanbul.com.tr         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 21:41:18 by betdemir          #+#    #+#             */
-/*   Updated: 2026/11/16 11:46:25 by betdemir         ###   ########.fr       */
+/*   Updated: 2026/11/16 23:44:38 by betdemir         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,4 +78,11 @@ size_t	ft_strlen(char const *arr)
 	while (arr[i])
 		i++;
 	return (i);
+}
+
+void	*ft_free(char *arr)
+{
+	if (arr)
+		free(arr);
+	return (NULL);
 }

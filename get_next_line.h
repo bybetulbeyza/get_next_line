@@ -6,7 +6,7 @@
 /*   By: betdemir@student.42istanbul.com.tr         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 21:41:58 by betdemir          #+#    #+#             */
-/*   Updated: 2026/11/16 11:45:31 by betdemir         ###   ########.fr       */
+/*   Updated: 2026/11/16 23:45:17 by betdemir         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,5 +25,5 @@ char		*ft_strjoin(char const *arr1, char const *arr2);
 void		*ft_calloc(size_t count, size_t size);
 char const	*ft_strchr(const char *arr, int c);
 size_t		ft_strlen(char const *arr);
-
+void		*ft_free(char *arr);
 #endif
