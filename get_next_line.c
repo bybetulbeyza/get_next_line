@@ -6,7 +6,7 @@
 /*   By: betdemir@student.42istanbul.com.tr         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 22:15:29 by betdemir          #+#    #+#             */
-/*   Updated: 2026/11/17 01:03:00 by betdemir         ###   ########.fr       */
+/*   Updated: 2026/11/17 16:34:15 by betdemir         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,6 +67,8 @@ char	*ft_strjoin_and_free(char *stash, char *buffer)
 	char	*temp;
 
 	temp = ft_strjoin(stash, buffer);
+	if (!temp)
+		return (ft_free(stash));
 	free(stash);
 	return (temp);
 }
@@ -78,6 +80,8 @@ char	*read_file(int fd, char *stash)
 
 	if (!stash)
 		stash = ft_calloc(1, 1);
+	if (!stash)
+		return (NULL);
 	buffer = malloc(BUFFER_SIZE + 1);
 	if (!buffer)
 		return (NULL);
