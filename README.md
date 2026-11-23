@@ -20,7 +20,7 @@ char *get_next_line(int fd);
 - The returned line includes the terminating `\n` character, except when the final line does not end with a newline.
 - Returns `NULL` when there is nothing left to read or when an error occurs.
 - Supports reading from regular files and standard input.
-- Uses a configurable `BUFFER_SIZE` to determine how many bytes are read at a time.
+- Uses a configurable `BUFFER_SIZE` to determine how many bytes are read at a time. Every call to `read()` uses exactly `BUFFER_SIZE` as its size argument.
 
 The project consists of two parts:
 
@@ -39,25 +39,27 @@ The project must be compiled with the following flags:
 
 The buffer size can be defined during compilation using `-D BUFFER_SIZE=n`. If no value is provided, the default value is `42`.
 
+The project contains no `main` function. To build an executable, add your own test file (for example `main.c`) to the compilation command.
+
 ### Mandatory Compilation
 
 ```bash
 cc -Wall -Wextra -Werror -D BUFFER_SIZE=42 \
-get_next_line.c get_next_line_utils.c
+get_next_line.c get_next_line_utils.c main.c -o gnl
 ```
 
 To use the default buffer size:
 
 ```bash
 cc -Wall -Wextra -Werror \
-get_next_line.c get_next_line_utils.c
+get_next_line.c get_next_line_utils.c main.c -o gnl
 ```
 
 ### Bonus Compilation
 
 ```bash
 cc -Wall -Wextra -Werror -D BUFFER_SIZE=42 \
-get_next_line_bonus.c get_next_line_utils_bonus.c
+get_next_line_bonus.c get_next_line_utils_bonus.c main.c -o gnl_bonus
 ```
 
 ### Usage
@@ -133,12 +135,13 @@ The mandatory implementation uses a single static pointer called `stash` to pres
 
 The algorithm consists of the following steps:
 
-1. **Read:** The `read_file()` function reads data from the file descriptor in chunks of `BUFFER_SIZE` bytes.
-2. **Store:** The newly read data is appended to the existing stash using `ft_strjoin_and_free()`.
-3. **Detect:** Reading continues until a newline character is found or the end of the file is reached.
-4. **Extract:** The `ft_extract_line()` function allocates and returns a new string containing the first line, including `\n` when present.
-5. **Update:** The `ft_next()` function creates a new stash containing only the remaining characters after the extracted line.
-6. **Return:** The extracted line is returned to the caller.
+1. **Validate:** The function returns `NULL` immediately if `fd` is negative or `BUFFER_SIZE` is not greater than zero. No extra `read()` call is made for validation, so `read()` is only ever called with `BUFFER_SIZE` as its size. Read errors are detected from the return value of the real `read()` call.
+2. **Read:** The `read_file()` function reads data from the file descriptor in chunks of `BUFFER_SIZE` bytes.
+3. **Store:** The newly read data is appended to the existing stash using `ft_strjoin_and_free()`.
+4. **Detect:** Reading continues until a newline character is found or the end of the file is reached.
+5. **Extract:** The `ft_extract_line()` function allocates and returns a new string containing the first line, including `\n` when present.
+6. **Update:** The `ft_next()` function creates a new stash containing only the remaining characters after the extracted line.
+7. **Return:** The extracted line is returned to the caller.
 
 The stash preserves any previously read data that has not yet been returned. This allows subsequent calls to continue reading without losing information.
 
@@ -178,7 +181,29 @@ get_next_line(fd2);
 
 Each file descriptor continues reading from where its previous call stopped.
 
-### 3. Utility Functions
+**Limits:** The bonus function returns `NULL` if `fd` is negative or if `fd >= MAX_FILES`, because such a value would fall outside the array. The array is still a single static variable, as required by the subject.
+
+### 3. Justification of the Algorithm
+
+**Why a static stash?**
+A call to `read()` returns `BUFFER_SIZE` bytes, which almost never ends exactly at a newline. The bytes read after the newline belong to the next line, and they cannot be pushed back into the file descriptor (and `lseek()` is forbidden). A static variable keeps its value between calls, so it is the natural place to keep these leftover bytes without using a global variable.
+
+**Why read in chunks and stop at the first newline?**
+The subject asks to read as little as possible and not to read the whole file before processing it. The loop therefore stops as soon as the stash contains a `\n`. This keeps memory usage proportional to the current line (plus at most one extra buffer), and it also works with standard input, pipes, and other file descriptors that are not regular files, where the total size is unknown and the data may arrive progressively.
+
+**Why does it work for any `BUFFER_SIZE`?**
+
+- With `BUFFER_SIZE = 1`, every call reads one byte at a time. The loop simply runs more times, and the stash grows until a newline appears. The result is correct but slower because of more system calls.
+- With a very large `BUFFER_SIZE` (for example 9999 or 10000000), one `read()` may return many lines at once. The first line is extracted and the rest stays in the stash, ready for the next calls. The temporary buffer is allocated on the heap (not on the stack), so a large value does not cause a stack overflow.
+- The buffer is allocated with `BUFFER_SIZE + 1` bytes so a terminating `'\0'` can be written after the bytes returned by `read()`.
+
+**Why separate `ft_extract_line()` and `ft_next()`?**
+Each function has a single responsibility (read, extract the line, keep the remainder), which keeps the code readable and small enough to respect the Norm.
+
+**Trade-off:**
+`ft_strjoin()` allocates a new string and copies the stash on every `read()` call. For very long lines with a very small `BUFFER_SIZE`, this means repeated copying. This was accepted in favor of simplicity and clarity.
+
+### 4. Utility Functions
 
 Both implementations use custom utility functions instead of the `libft` library.
 
@@ -190,7 +215,7 @@ Both implementations use custom utility functions instead of the `libft` library
 | `ft_calloc()` | Allocates and initializes memory to zero |
 | `ft_free()` | Frees allocated memory and returns `NULL` |
 
-### 4. Memory Management
+### 5. Memory Management and Error Handling
 
 Dynamic memory allocation is essential to this project because the size of a line is not known in advance.
 
@@ -203,6 +228,13 @@ The implementation uses `malloc()` and custom allocation utilities to manage:
 
 Allocated memory is released when it is no longer needed. The caller is responsible for freeing each returned line.
 
+Failures are handled so that no memory is leaked and no crash occurs:
+
+- If `read()` returns `-1`, the buffer and the stash are freed and `NULL` is returned.
+- If any `malloc()` fails (buffer, stash, joined string, extracted line, or new stash), the memory already owned by the function is freed and `NULL` is returned.
+- If joining the stash with the new data fails, the stash becomes `NULL`, and the reading loop checks for this before using it.
+- When the end of the file is reached and nothing remains in the stash, the stash is freed and set to `NULL`.
+
 ## Resources
 
 - **42 Get Next Line Subject:** Official project requirements and evaluation guidelines.
@@ -213,5 +245,7 @@ Allocated memory is released when it is no longer needed. The caller is responsi
 ### AI Usage Declaration
 
 Artificial Intelligence was used as a learning aid throughout the project. It helped clarify concepts such as file descriptors, static variables, buffer management, dynamic memory allocation, and the behavior of the `read()` system call.
+
+Artificial Intelligence was also used to help write and structure this `README.md` file (its sections, wording, and formatting), ensuring the requirements of the subject were covered.
 
 The implementation, testing, and understanding of the algorithms remain part of the learning process.
