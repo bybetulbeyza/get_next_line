@@ -6,7 +6,7 @@
 /*   By: betdemir@student.42istanbul.com.tr         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/21 22:15:29 by betdemir          #+#    #+#             */
-/*   Updated: 2026/11/23 20:22:21 by betdemir         ###   ########.fr       */
+/*   Updated: 2026/11/23 23:06:02 by betdemir         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 char	*ft_extract_line(char	*stash)
 {
 	char	*temp;
-	int		i;
+	size_t	i;
 
 	i = 0;
 	if (!stash[i])
@@ -39,8 +39,8 @@ char	*ft_extract_line(char	*stash)
 char	*ft_next(char *stash)
 {
 	char	*temp;
-	int		i;
-	int		j;
+	size_t	i;
+	size_t	j;
 
 	i = 0;
 	while (stash[i] && stash[i] != '\n')
@@ -49,7 +49,7 @@ char	*ft_next(char *stash)
 		return (ft_free(stash));
 	temp = ft_calloc(ft_strlen(stash) - i + 1, sizeof(char));
 	if (!temp)
-		return (NULL);
+		return (ft_free(stash));
 	i++;
 	j = 0;
 	while (stash[i])
@@ -76,7 +76,7 @@ char	*ft_strjoin_and_free(char *stash, char *buffer)
 char	*read_file(int fd, char *stash)
 {
 	char	*buffer;
-	int		byte_read;
+	ssize_t	byte_read;
 
 	if (!stash)
 		stash = ft_calloc(1, 1);
@@ -84,9 +84,9 @@ char	*read_file(int fd, char *stash)
 		return (NULL);
 	buffer = malloc(BUFFER_SIZE + 1);
 	if (!buffer)
-		return (NULL);
+		return (ft_free(stash));
 	byte_read = 1;
-	while (byte_read > 0 && !ft_strchr(stash, '\n'))
+	while (byte_read > 0 && stash && !ft_strchr(stash, '\n'))
 	{
 		byte_read = read(fd, buffer, BUFFER_SIZE);
 		if (byte_read == -1)
