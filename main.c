@@ -1,37 +1,58 @@
+#include "get_next_line_bonus.h"
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
-#include "get_next_line.h"
+#include <string.h>
 
-int main()
+int main(int argc, char **argv)
 {
-	int fd;
-	char *line;
+    int     fd[3];
+    int     i;
+    int     active;
+    char    *line;
 
-	fd = open("text.txt", O_RDWR , 0644);
-	if (fd == -1)
-		return (1);
-	//int i = 0;
-	//while (i < 1111)
-	//{
-	//	write(fd, "a",1);
-	//	i++;
-	//}
-	////write (fd, "\n",1);
-	//i = 0;
-	//while (i < 1111)
-	//{
-	//	write(fd, "b",1);
-	//	i++;
-	//}
-	//lseek(fd, 0,SEEK_SET);
-	line = get_next_line(fd);
-	while (line)
-	{
-		printf("%s",line);
-		free (line);
-		line = get_next_line(fd);
-	}
-	close (fd);
-	return (0);
+    if (argc != 4)
+        return (1);
+
+    i = 0;
+    while (i < 3)
+    {
+        fd[i] = open(argv[i + 1], O_RDONLY);
+        if (fd[i] == -1)
+        {
+            while (--i >= 0)
+                close(fd[i]);
+            return (1);
+        }
+        i++;
+    }
+
+    active = 3;
+    while (active > 0)
+    {
+        i = 0;
+        while (i < 3)
+        {
+            if (fd[i] != -1)
+            {
+                line = get_next_line_bonus(fd[i]);
+                if (line == NULL)
+                {
+                    close(fd[i]);
+                    fd[i] = -1;
+                    active--;
+                }
+                else
+                {
+                    printf("[FD %d] %s", fd[i], line);
+                    if (line[strlen(line) - 1] != '\n')
+                        printf("\n");
+                    free(line);
+                }
+            }
+            i++;
+        }
+    }
+    return (0);
 }
